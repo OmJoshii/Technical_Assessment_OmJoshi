@@ -1,0 +1,60 @@
+# Order & Inventory System — The AI Foundry Technical Assessment
+
+## How to Run
+**Requirements:** Python 3.9+
+
+```bash
+python inventory_system.py
+```
+
+No external dependencies required — uses only the Python standard library.
+---
+
+## Section 1 — Approach & Design Decisions
+
+### Overall Design
+
+The core logic is a single function `process_order(products, order)` that takes a product list and a customer order, validates everything, and returns a structured success or error response.
+
+The most important design decision is: **validate first, mutate last.** Stock is only deducted after every single check passes. This prevents partial updates — if item 3 of 5 fails, nothing has been touched yet.
+
+### Step-by-Step Flow
+
+1. Check if the order has any items at all — return an error immediately if not.
+2. Convert the product list into a dictionary (`product_id → product`) for fast O(1) lookups.
+3. Merge duplicate product IDs in the order by combining their quantities.
+4. Validate each item — invalid quantity, product not found, insufficient stock.
+5. If all checks pass, deduct stock and return a success response with updated inventory.
+
+### Edge Cases Handled
+
+| # | Edge Case | How It's Handled |
+|---|---|---|
+| 1 | Empty order | Checked first — returns error before any other logic |
+| 2 | Duplicate product entries | Quantities merged before validation so total demand is checked correctly |
+| 3 | Invalid quantity (0 or negative) | Rejected with a clear message |
+| 4 | Product ID not in inventory | Returns error with the unknown product ID |
+| 5 | Requested quantity exceeds stock | Returns error showing both requested and available quantities |
+
+---
+
+## Section 1 — Bonus: Scalability Thinking
+
+### How would you handle 10,000 orders per minute?
+
+The current solution runs in memory and processes one order at a time. At 10,000 orders/min that breaks down quickly. Here is how I would redesign it:
+
+**1. Wrap it in a REST API (e.g. FastAPI)**
+Turn `process_order` into an HTTP endpoint. Each request is stateless, which makes it easy to scale horizontally.
+
+**2. Move inventory to a database**
+In-memory dicts don't survive restarts and can't be shared across multiple server instances. A database like PostgreSQL lets multiple servers read and write the same inventory. Stock deductions must use atomic operations or row-level locking to prevent two orders from claiming the last unit simultaneously.
+
+**3. Add a message queue (e.g. Kafka or RabbitMQ)**
+Instead of processing orders synchronously inside the HTTP request, push orders onto a queue and return an "accepted" response immediately. Background workers consume the queue and do the actual processing. This absorbs traffic spikes gracefully.
+
+**4. Horizontal scaling**
+Run multiple API server instances behind a load balancer. Since each instance is stateless, scaling out is just a matter of adding more containers.
+
+**5. Cache the product catalogue**
+Product names and IDs change rarely. Cache them in Redis so every validation check doesn't hit the database.
