@@ -59,3 +59,17 @@ def process_order(products, order):
 
     return {"status": "success", "order_id": order_id, "message": f"Order {order_id} placed successfully.", "updated_stock": updated_stock}
 
+# --- Tests ---
+
+test_cases = [
+    ("Successful order",           {"order_id": "O1001", "items": [{"product_id": "P1", "quantity": 2}, {"product_id": "P2", "quantity": 5}]}),
+    ("Product not found",          {"order_id": "O1002", "items": [{"product_id": "P99", "quantity": 1}]}),
+    ("Quantity exceeds stock",     {"order_id": "O1003", "items": [{"product_id": "P1", "quantity": 100}]}),
+    ("Empty order",                {"order_id": "O1004", "items": []}),
+    ("Duplicate product entries",  {"order_id": "O1005", "items": [{"product_id": "P1", "quantity": 4}, {"product_id": "P1", "quantity": 4}]}),
+    ("Invalid quantity",           {"order_id": "O1006", "items": [{"product_id": "P1", "quantity": -1}]}),
+]
+
+for label, test_order in test_cases:
+    print(f"\n--- {label} ---")
+    print(json.dumps(process_order(copy.deepcopy(products), test_order), indent=2))
