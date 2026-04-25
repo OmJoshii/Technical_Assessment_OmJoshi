@@ -127,3 +127,44 @@ I chose to fulfil each product entirely from one warehouse wherever possible —
 5. **No warehouse has processing backlogs.** Both can ship immediately.
 
 ---
+
+## Section 3 — Quantitative & Logical Reasoning
+
+### Q1 — Throughput Calculation
+
+**Given:** 2 seconds per order, 5 orders handled simultaneously.
+
+```
+Orders per second = 5 ÷ 2     = 2.5 orders/second
+Orders per minute = 2.5 × 60  = 150 orders/minute
+```
+
+**The system can process 150 orders per minute.**
+
+---
+
+### Q2 — Overload Scenario at 300 Orders/Minute
+
+The system capacity is 150 orders/minute but 300 are arriving — twice what it can handle.
+
+**What happens:**
+- All 5 processing slots are always full. New orders can't be picked up immediately and queue up.
+- The queue grows by 150 orders every minute without bound.
+- Response times climb continuously as orders wait longer and longer.
+- Eventually memory is exhausted and the process crashes, or if there's a queue limit, orders start getting dropped.
+
+**Failure mode: unbounded queue growth → memory exhaustion → crash or order loss.**
+
+---
+
+### Q3 — Improvement: Add More Parallel Workers
+
+**Suggestion:** Increase parallel workers from 5 to 10 (or more).
+
+Doubling the workers doubles throughput from 150 to 300 orders/minute — exactly matching the new load. This is the most direct fix because the bottleneck is concurrency, not the logic itself.
+
+In practice this means running more async workers within a process (for I/O-bound work) or more server instances behind a load balancer (for distributed workloads). It scales linearly with no changes to the core processing logic.
+
+---
+
+*Submitted by Om Joshi — The AI Foundry Internship Technical Assessment*
