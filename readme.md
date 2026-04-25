@@ -58,3 +58,72 @@ Run multiple API server instances behind a load balancer. Since each instance is
 
 **5. Cache the product catalogue**
 Product names and IDs change rarely. Cache them in Redis so every validation check doesn't hit the database.
+
+---
+
+## Section 2 — Warehouse Allocation
+
+### Current State
+
+| Product | Warehouse A | Warehouse B |
+|---|---|---|
+| P1 — Shampoo | 5 units | 10 units |
+| P2 — Soap | 10 units | 5 units |
+
+### Order Requirements
+
+| Product | Quantity Needed |
+|---|---|
+| P1 — Shampoo | 8 units |
+| P2 — Soap | 6 units |
+
+---
+
+### Question 1 — Exact Allocation Plan
+
+**P1 — Shampoo (8 units needed):**
+- Warehouse A only has 5 — cannot fulfil alone.
+- Warehouse B has 10 — can fulfil entirely.
+- **Ship all 8 units of P1 from Warehouse B.**
+
+**P2 — Soap (6 units needed):**
+- Warehouse B only has 5 — cannot fulfil alone.
+- Warehouse A has 10 — can fulfil entirely.
+- **Ship all 6 units of P2 from Warehouse A.**
+
+**Final Allocation:**
+
+| Warehouse | Ships |
+|---|---|
+| Warehouse A | P2 — Soap × 6 |
+| Warehouse B | P1 — Shampoo × 8 |
+
+**Remaining Stock After Fulfilment:**
+
+| Product | Warehouse A | Warehouse B |
+|---|---|---|
+| P1 — Shampoo | 5 (unchanged) | 2 |
+| P2 — Soap | 4 | 5 (unchanged) |
+
+---
+
+### Question 2 — Strategy: Minimise Shipment Splits
+
+I chose to fulfil each product entirely from one warehouse wherever possible — no product is split across two warehouses.
+
+**Why:**
+- Simpler logistics — one pick, one pack, one label per product line.
+- Fewer partial delivery issues — if one shipment is delayed, only one product is affected.
+- In this case it works out perfectly: each warehouse is the only one that can fully cover one of the two products, so no compromise is needed.
+
+---
+
+### Question 3 — Assumptions
+
+1. **Both warehouses have similar shipping costs and delivery times.** If one were significantly closer, I'd weight allocations toward it.
+2. **Shipping cost is per shipment, not per unit.** Two shipments is acceptable.
+3. **Stock figures are real-time and accurate.** No other orders are modifying inventory concurrently.
+4. **Both products go to the same destination.** If they were going to different locations, each product's warehouse choice would be evaluated independently.
+5. **No warehouse has processing backlogs.** Both can ship immediately.
+
+---
